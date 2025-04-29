@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Chat - Simple Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Add Session Timer Div -->
+    <div id="session-timer" class="session-timer">Session expires in: <span id="timer-display">10:00</span></div>
+
+    <div class="container chat-container">
+        <div class="chat-header">
+            <h1>Group Chat Room</h1>
+            <span id="welcome-message"></span>
+            <button id="logout-button" style="display: none;">Logout</button> <!-- Hidden initially -->
+        </div>
+        <div id="messages-area" class="messages-area">
+            <!-- Messages will be loaded here -->
+        </div>
+        <form id="message-form" class="message-form">
+            <input type="text" id="message-input" placeholder="Type your message..." required autocomplete="off">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+    <script src="client.js"></script>
+</body>
+</html>
