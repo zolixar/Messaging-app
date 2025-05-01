@@ -275,10 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (messagesArea) { // Only run if chat elements exist
              loadUserInfo(); // This will call resetTimer on success
              loadMessages(); // This will call resetTimer on success
-             // startTimer(); // Initial timer start is handled by loadUserInfo/loadMessages resetting it
-             // Optional: More robust activity detection (e.g., mousemove, keypress)
-             // document.body.addEventListener('mousemove', resetTimer, { capture: true, passive: true });
-             // document.body.addEventListener('keypress', resetTimer, { capture: true, passive: true });
         }
     }
 });
