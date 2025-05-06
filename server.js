@@ -1,190 +1,151 @@
-const express = require("express");
-const session = require("express-session");
-const fs = require("fs");
-const path = require("path");
-
+// Modules
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
+const session = require('express-session');
+// Express app
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-const usersFilePath = path.join(__dirname, "data", "users.json");
-const messagesFilePath = path.join(__dirname, "data", "messages.json");
-
-// Helper function to read JSON data
-const readJsonFile = (filePath) => {
-    try {
-        if (!fs.existsSync(filePath)) {
-            // If file doesn't exist, create it with default structure
-            if (filePath.includes("users.json")) writeJsonFile(filePath, []);
-            if (filePath.includes("messages.json")) writeJsonFile(filePath, []);
-        }
-        const data = fs.readFileSync(filePath, "utf8");
-        // Handle empty file case
-        return data ? JSON.parse(data) : (filePath.includes("users.json") ? [] : []);
-    } catch (err) {
-        console.error(`Error reading file ${filePath}:`, err);
-        // Return default structure on error
-        if (filePath.includes("users.json")) return [];
-        if (filePath.includes("messages.json")) return [];
-        return null;
-    }
-};
-
-// Helper function to write JSON data
-const writeJsonFile = (filePath, data) => {
-    try {
-        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
-    } catch (err) {
-        console.error(`Error writing file ${filePath}:`, err);
-    }
-};
-
-// Middleware
-app.use(express.json()); // for parsing application/json
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(express.static(path.join(__dirname, "public"))); // Serve static files
-
-// Session configuration - Updated for 10-minute rolling session
+const PORT = 3000;
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+// Parse JSON and form data
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+//Sessions
 app.use(session({
-    secret: "a-very-strong-and-secure-secret-key", // IMPORTANT: Change this in production!
-    resave: false, // Don't save session if unmodified
-    saveUninitialized: false, // Don't save session if never modified
-    rolling: true, // Reset the session maxAge on every response (for activity-based timeout)
-    cookie: { 
-        secure: false, // Set to true if using HTTPS
-        httpOnly: true, // Helps prevent XSS attacks
-        maxAge: 10 * 60 * 1000 // Session duration: 10 minutes (in milliseconds)
-    }
+    secret: '14f7d7f6c458d1103d8af0d4c8b12b99d9e8a1f867003206c73026c367fcb478e262bef7d923fb27fc415a030c9754d9ec7d94cbfb43499d6f16810e989bdf16',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 10 * 60 * 1000 } // 10 minutes
 }));
 
-// Middleware to check if user is authenticated for API routes
-const isAuthenticatedAPI = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.status(401).json({ message: "Unauthorized: Please log in." });
+//Read users from users.json
+const readUsers = () => {
+    const filePath ='data/users.json';
+    if (!fs.existsSync(filePath)) {
+        return [];
     }
+    const data = fs.readFileSync(filePath, 'utf8');
+    return data ? JSON.parse(data) : []; 
+};
+//Write users to users.json
+const writeUsers = (users) => {
+    fs.writeFileSync('data/users.json', JSON.stringify(users, null, 2), 'utf8');
+    
+};
+//Read messages from messages.json
+const readMessages = () => {
+    const filePath = 'data/messages.json';
+    const data = fs.readFileSync(filePath, 'utf8');
+    return data ? JSON.parse(data) : [];
+};
+//Write messages to messages.json
+const writeMessages = (messages) => {
+    fs.writeFileSync('data/messages.json', JSON.stringify(messages, null, 2), 'utf8');
 };
 
-// Middleware to check if user is authenticated for HTML pages
-const isAuthenticatedPage = (req, res, next) => {
-    if (req.session.user) {
-        next();
-    } else {
-        res.redirect("/login.html");
-    }
+//Login Status
+const isLoggedIn = (req, res, next) => {
+  if (req.session.user) {  // Check if the user is logged in
+      next();             // Allow the request to proceed
+  } else {
+      res.status(401).json({ message: 'Not authenticated' }); // Deny access
+  }
 };
 
-// --- Routes --- 
-
-// Root route: Redirect to chat if logged in, otherwise to login
-app.get("/", (req, res) => {
-    if (req.session.user) {
-        res.redirect("/chat.html");
-    } else {
-        res.redirect("/login.html");
-    }
-});
-
-// Serve login page
-app.get("/login.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "login.html"));
-});
-
-// Serve signup page
-app.get("/signup.html", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "signup.html"));
-});
-
-// Serve chat page only if authenticated
-app.get("/chat.html", isAuthenticatedPage, (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "chat.html"));
-});
-
-// --- API Routes --- 
-
+// Routes
 // Signup
-app.post("/api/signup", (req, res) => {
+app.post('/api/signup', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required." });
+        return res.status(400).json({ message: 'Username and password are required' });
     }
-    const users = readJsonFile(usersFilePath);
-    const existingUser = users.find(user => user.username === username);
-    if (existingUser) {
-        return res.status(409).json({ message: "Username already exists." });
-    }
-    // Note: Storing passwords in plain text is insecure. Hashing is recommended.
-    const newUser = { username, password }; 
-    users.push(newUser);
-    writeJsonFile(usersFilePath, users);
-    console.log(`User signed up: ${username}`);
-    res.status(201).json({ message: "Signup successful! Please login." });
+    let users = readUsers();
+    // Check if username already exists
+    for (const user of users) {
+      if (user.username === username) {
+          return res.status(400).json({ message: 'Username already exists' });
+      }
+  }
+    // Add new user
+    users.push({ username, password });
+    writeUsers(users);
+    // Response
+    res.status(200).json({ message: 'Signup successful' });
 });
-
 // Login
-app.post("/api/login", (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required." });
-    }
-    const users = readJsonFile(usersFilePath);
-    const user = users.find(user => user.username === username);
-    // IMPORTANT: Comparing plain text passwords. Insecure!
-    if (!user || user.password !== password) { 
-        return res.status(401).json({ message: "Invalid username or password." });
-    }
-    req.session.user = { username: user.username }; 
-    console.log(`User logged in: ${username}`);
-    res.status(200).json({ message: "Login successful!" });
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required' });
+  }
+  const users = readUsers();
+  let user = null;
+  for (const u of users) {
+      if (u.username === username && u.password === password) {
+          user = u;
+          break; 
+      }
+  }
+  if (!user) {
+      // No match found — deny login
+      return res.status(401).json({ message: 'Invalid username or password' });
+  }
+  // Store user in session if match found
+  req.session.user = { username: user.username };
+
+  res.status(200).json({ message: 'Login successful', redirect: '/chat.html' });
 });
 
-// Logout
-app.post("/api/logout", isAuthenticatedAPI, (req, res) => {
-    const username = req.session.user.username;
-    req.session.destroy(err => {
-        if (err) {
-            console.error("Error destroying session:", err);
-            return res.status(500).json({ message: "Logout failed. Please try again." });
-        }
-        console.log(`User logged out: ${username}`);
-        res.status(200).json({ message: "Logout successful!" });
-    });
+// Get current user
+app.get('/api/user', isLoggedIn, (req, res) => {
+    res.json({ username: req.session.user.username });
 });
 
 // Get messages
-app.get("/api/messages", isAuthenticatedAPI, (req, res) => {
-    const messages = readJsonFile(messagesFilePath);
-    res.status(200).json(messages);
+app.get('/api/messages', isLoggedIn, (req, res) => {
+    const messages = readMessages();
+    res.json(messages);
 });
 
-// Post message
-app.post("/api/messages", isAuthenticatedAPI, (req, res) => {
+// Post a new message
+app.post('/api/messages', isLoggedIn, (req, res) => {
     const { message } = req.body;
-    if (!message || message.trim() === "") {
-        return res.status(400).json({ message: "Message content cannot be empty." });
+    if (!message) {
+        return res.status(400).json({ message: 'Message text is required' });
     }
-
-    const messages = readJsonFile(messagesFilePath);
+    const messages = readMessages();
     const newMessage = {
-        username: req.session.user.username, // Get username from session
-        text: message.trim(),
-        timestamp: new Date().toISOString() // Add ISO timestamp
+        username: req.session.user.username,
+        text: message,
+        timestamp: new Date().toISOString()
     };
-
     messages.push(newMessage);
-    writeJsonFile(messagesFilePath, messages);
-
-    console.log(`Message posted by ${newMessage.username}: ${newMessage.text}`);
-    // Return the newly created message, useful for client-side updates
-    res.status(201).json(newMessage); 
+    writeMessages(messages);
+    res.status(201).json({ message: 'Message sent successfully' });
 });
 
-// Get current user info (useful for frontend)
-app.get("/api/user", isAuthenticatedAPI, (req, res) => {
-    res.json({ username: req.session.user.username }); 
+// Logout
+app.post('/api/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Logout failed' });
+        }
+        res.status(200).json({ message: 'Logout successful', redirect: '/login.html' });
+    });
 });
 
-// Start server
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// Protected route - only accessible if logged in
+app.get('/chat.html', isLoggedIn, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'chat.html'));
+});
+
+// Root route - redirect to login page
+app.get('/', (req, res) => {
+    res.redirect('/login.html');
+});
+
+// Starting the server
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
 });

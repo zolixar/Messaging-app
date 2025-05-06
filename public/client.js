@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {//Ensures DOM is Ready
     const loginForm = document.getElementById("login-form");
     const signupForm = document.getElementById("signup-form");
     const messageForm = document.getElementById("message-form");
@@ -6,182 +6,161 @@ document.addEventListener("DOMContentLoaded", () => {
     const messageInput = document.getElementById("message-input");
     const logoutButton = document.getElementById("logout-button");
     const welcomeMessageSpan = document.getElementById("welcome-message");
-    const errorMessageP = document.getElementById("error-message"); // Common for login/signup
-    const successMessageP = document.getElementById("success-message"); // For signup
-    const timerDisplaySpan = document.getElementById("timer-display"); // Session timer display
+    const errorMessageP = document.getElementById("error-message");
+    const successMessageP = document.getElementById("success-message");
+    const timerDisplaySpan = document.getElementById("timer-display");
 
-    // --- Session Timer Variables --- (Step 018)
-    const SESSION_DURATION_SECONDS = 10 * 60; // 10 minutes
-    let remainingSeconds = SESSION_DURATION_SECONDS;
-    let sessionIntervalId = null;
+    // Session timer variables
+    const SESSION_TIMEOUT = 10*60; // 10 minutes in seconds
+    let timeRemaining = SESSION_TIMEOUT;
+    let timerInterval = null;
 
-    // --- Helper Functions --- 
-
-    const displayError = (message, element = errorMessageP) => {
-        if (element) {
-            element.textContent = message;
-            element.style.display = message ? "block" : "none";
+    // Helper Functions
+    function showError(message) {
+        if (errorMessageP) {
+            errorMessageP.textContent = message;
+            errorMessageP.style.display = message ? "block" : "none";
         }
-    };
+    }
 
-    const displaySuccess = (message, element = successMessageP) => {
-        if (element) {
-            element.textContent = message;
-            element.style.display = message ? "block" : "none";
+    function showSuccess(message) {
+        if (successMessageP) {
+            successMessageP.textContent = message;
+            successMessageP.style.display = message ? "block" : "none";
         }
-    };
+    }
 
-    // Function to format timestamp
-    const formatTimestamp = (isoString) => {
-        if (!isoString) return "";
-        try {
-            const date = new Date(isoString);
-            return date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" }); 
-        } catch (e) {
-            console.error("Error formatting date:", e);
-            return isoString;
-        }
-    };
+    function formatTime(timestamp) {
+        if (!timestamp) return "";
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
 
-    // Function to display a single message
-    const displayMessage = (msg) => {
-        if (!messagesArea || !msg || !msg.username || !msg.text) return;
-        
-        const messageDiv = document.createElement("div");
-        messageDiv.classList.add("message");
-
-        const metaDiv = document.createElement("div");
-        metaDiv.classList.add("meta");
-
-        const usernameSpan = document.createElement("span");
-        usernameSpan.classList.add("username");
-        usernameSpan.textContent = msg.username;
-        metaDiv.appendChild(usernameSpan);
-
-        const timestampSpan = document.createElement("span");
-        timestampSpan.classList.add("timestamp");
-        timestampSpan.textContent = formatTimestamp(msg.timestamp);
-        metaDiv.appendChild(timestampSpan);
-
-        const textP = document.createElement("p");
-        textP.textContent = msg.text;
-
-        messageDiv.appendChild(metaDiv);
-        messageDiv.appendChild(textP);
-
-        messagesArea.appendChild(messageDiv);
-        messagesArea.scrollTop = messagesArea.scrollHeight;
-    };
-
-    // --- Session Timer Functions --- (Step 018)
-    const updateTimerDisplay = () => {
-        if (!timerDisplaySpan) return;
-        const minutes = Math.floor(remainingSeconds / 60);
-        const seconds = remainingSeconds % 60;
+    // Session Timer Functions
+    function updateTimer() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
         timerDisplaySpan.textContent = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-    };
-
-    const stopTimer = () => {
-        if (sessionIntervalId) {
-            clearInterval(sessionIntervalId);
-            sessionIntervalId = null;
+        
+        if (timeRemaining == 0) {
+            clearInterval(timerInterval);
+            alert("Your session has expired. Please log in again.");
+            window.location.href = "/login.html";
         }
-    };
+    }
 
-    const startTimer = () => {
-        stopTimer(); // Clear any existing timer
-        remainingSeconds = SESSION_DURATION_SECONDS;
-        updateTimerDisplay(); // Update display immediately
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        timeRemaining = SESSION_TIMEOUT;
+        updateTimer();
+        
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimer();
+        }, 1000);
+    }
 
-        sessionIntervalId = setInterval(() => {
-            remainingSeconds--;
-            updateTimerDisplay();
+    function resetTimer() {
+        timeRemaining = SESSION_TIMEOUT;
+        updateTimer();
+    }
 
-            if (remainingSeconds <= 0) {
-                stopTimer();
-                timerDisplaySpan.textContent = "Expired";
-                // Optional: Automatically log out or redirect after a delay
-                alert("Your session has expired. Please log in again.");
-                window.location.href = "/login.html"; 
+    // API Functions
+    async function fetchData(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            const data = await response.json();
+            
+            if (response.status === 401) {
+                if (url !== "/api/login") { // Don't redirect if it's a login attempt
+                    clearInterval(timerInterval);
+                    window.location.href = "/login.html";
+                }
             }
-        }, 1000); // Run every second
-    };
+            
+            return { ok: response.ok, status: response.status, data };
+        } catch (error) {
+            console.error(`Error with ${url}:`, error);
+            return { ok: false, error };
+        }
+    }
 
-    const resetTimer = () => {
-        // console.log("Resetting session timer due to activity."); // For debugging
-        startTimer();
-    };
-    // --- End Session Timer Functions ---
-
-    // Function to fetch and display messages
-    const loadMessages = async () => {
+    // Load and display messages
+    async function loadMessages() {
         if (!messagesArea) return;
-        try {
-            const response = await fetch("/api/messages");
-            if (response.ok) {
-                const messages = await response.json();
-                messagesArea.innerHTML = ""; // Clear existing messages
-                messages.forEach(displayMessage);
-                resetTimer(); // Reset timer on successful fetch (activity)
-            } else if (response.status === 401) {
-                stopTimer(); // Stop timer if unauthorized
-                window.location.href = "/login.html";
-            } else {
-                console.error("Failed to load messages:", response.statusText);
-                displayError("Could not load messages.", messagesArea);
-            }
-        } catch (error) {
-            console.error("Error fetching messages:", error);
-            displayError("An error occurred while loading messages.", messagesArea);
-        }
-    };
+        
+        const result = await fetchData("/api/messages");
+        if (!result || !result.ok) return;
+        
+        // Clear existing messages
+        messagesArea.innerHTML = "";
+        
+        // Display each message
+        result.data.forEach(msg => {
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("message");
+            
+            const metaDiv = document.createElement("div");
+            metaDiv.classList.add("meta");
+            
+            const usernameSpan = document.createElement("span");
+            usernameSpan.classList.add("username");
+            usernameSpan.textContent = msg.username;
+            
+            const timestampSpan = document.createElement("span");
+            timestampSpan.classList.add("timestamp");
+            timestampSpan.textContent = formatTime(msg.timestamp);
+            
+            metaDiv.appendChild(usernameSpan);
+            metaDiv.appendChild(timestampSpan);
+            
+            const textP = document.createElement("p");
+            textP.textContent = msg.text;
+            
+            messageDiv.appendChild(metaDiv);
+            messageDiv.appendChild(textP);
+            messagesArea.appendChild(messageDiv);
+        });
+        
+        // Scroll to bottom
+        messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
 
-    // Function to fetch user info
-    const loadUserInfo = async () => {
+    // Load user info
+    async function loadUserInfo() {
         if (!welcomeMessageSpan || !logoutButton) return;
-        try {
-            const response = await fetch("/api/user");
-            if (response.ok) {
-                const user = await response.json();
-                welcomeMessageSpan.textContent = `Welcome, ${user.username}!`;
-                logoutButton.style.display = "inline-block";
-                resetTimer(); // Reset timer on successful fetch (activity)
-            } else if (response.status === 401) {
-                 stopTimer(); // Stop timer if unauthorized
-                 window.location.href = "/login.html";
-            } else {
-                console.error("Failed to load user info:", response.statusText);
-            }
-        } catch (error) {
-            console.error("Error fetching user info:", error);
-        }
-    };
+        
+        const result = await fetchData("/api/user");
+        if (!result || !result.ok) return;
+        
+        welcomeMessageSpan.textContent = `Welcome, ${result.data.username}!`;
+        logoutButton.style.display = "inline-block";
+    }
 
-    // --- Event Listeners --- 
-
+    // Event Listeners
     // Login Form
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            displayError("");
+            e.preventDefault(); // Prevent form submission
+            showError(""); // Clear previous errors
+            
             const formData = new FormData(loginForm);
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const response = await fetch("/api/login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    window.location.href = "/chat.html";
-                } else {
-                    displayError(result.message || "Login failed.");
-                }
-            } catch (error) {
-                console.error("Login error:", error);
-                displayError("An error occurred during login.");
+            const userData = {
+                username: formData.get("username"),
+                password: formData.get("password")
+            };
+            
+            const result = await fetchData("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData)
+            });
+            
+            if (result && result.ok) {
+                window.location.href = "/chat.html";
+            } else {
+                // Display error message and don't redirect
+                showError(result?.data?.message || "Login failed");
             }
         });
     }
@@ -189,93 +168,69 @@ document.addEventListener("DOMContentLoaded", () => {
     // Signup Form
     if (signupForm) {
         signupForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            displayError("");
-            displaySuccess("");
+            e.preventDefault(); // Prevent form submission
+            showError("");
+            showSuccess("");
+            
             const formData = new FormData(signupForm);
-            const data = Object.fromEntries(formData.entries());
-
-            try {
-                const response = await fetch("/api/signup", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(data),
-                });
-                const result = await response.json();
-                if (response.ok) {
-                    displaySuccess(result.message || "Signup successful! Please login.");
-                    signupForm.reset();
-                } else {
-                    displayError(result.message || "Signup failed.");
-                }
-            } catch (error) {
-                console.error("Signup error:", error);
-                displayError("An error occurred during signup.");
+            const userData = {
+                username: formData.get("username"),
+                password: formData.get("password")
+            };
+            
+            const result = await fetchData("/api/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(userData)
+            });
+            
+            if (result && result.ok) {
+                showSuccess("Signup successful! Please login.");
+                signupForm.reset();
+            } else {
+                showError(result?.data?.message || "Signup failed");
             }
         });
     }
 
-    // Message Form (Chat Page)
+    // Message Form
     if (messageForm) {
         messageForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const messageText = messageInput.value.trim();
             if (!messageText) return;
-
-            try {
-                const response = await fetch("/api/messages", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: messageText }),
-                });
-                
-                if (response.ok) {
-                    messageInput.value = "";
-                    loadMessages(); // Reload messages AND reset timer via loadMessages
-                    // resetTimer(); // Explicitly reset timer on send (redundant if loadMessages resets)
-                } else if (response.status === 401) {
-                    stopTimer(); // Stop timer if unauthorized
-                    window.location.href = "/login.html";
-                } else {
-                    const result = await response.json();
-                    console.error("Failed to send message:", result.message);
-                }
-            } catch (error) {
-                console.error("Error sending message:", error);
+            
+            const result = await fetchData("/api/messages", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: messageText })
+            });
+            
+            if (result && result.ok) {
+                messageInput.value = "";
+                loadMessages();
             }
         });
     }
 
-    // Logout Button (Chat Page)
+    // Logout Button
     if (logoutButton) {
         logoutButton.addEventListener("click", async () => {
-            stopTimer(); // Stop timer on logout
-            try {
-                const response = await fetch("/api/logout", {
-                    method: "POST",
-                });
-                if (response.ok) {
-                    window.location.href = "/login.html";
-                } else {
-                    const result = await response.json();
-                    console.error("Logout failed:", result.message);
-                    alert("Logout failed. Please try again.");
-                }
-            } catch (error) {
-                console.error("Logout error:", error);
-                alert("An error occurred during logout.");
+            clearInterval(timerInterval);
+            
+            const result = await fetchData("/api/logout", { method: "POST" });
+            if (result && result.ok) {
+                window.location.href = "/login.html";
             }
         });
     }
 
-    // --- Initial Page Load Logic --- 
-
-    // If on chat page, load user info, messages, and start timer
+    // Initialize chat page
     if (window.location.pathname.endsWith("/chat.html")) {
-        if (messagesArea) { // Only run if chat elements exist
-             loadUserInfo(); // This will call resetTimer on success
-             loadMessages(); // This will call resetTimer on success
-        }
+        loadUserInfo();
+        loadMessages();
+        startTimer();
+        // Set up auto-refresh for messages
+        setInterval(loadMessages, 3000); // Refresh messages every 10 seconds
     }
 });
-

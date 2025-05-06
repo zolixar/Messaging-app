@@ -3,26 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up - Simple Chat</title>
+    <title>Sign Up - Atlas Chat</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h1>Sign Up</h1>
+        <div class="brand">
+            <div class="logo-container">
+                <i class="fas fa-globe-americas"></i>
+            </div>
+            <h2>Atlas Chat</h2>
+        </div>
+        <h1>Create Account</h1>
         <form id="signup-form">
             <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+                <label for="username">Username</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
+                </div>
             </div>
             <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+                <label for="password">Password</label>
+                <div class="input-with-icon">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" name="password" placeholder="Create a password" required>
+                </div>
             </div>
-            <button type="submit">Sign Up</button>
+            <button type="submit">
+                <span>Create Account</span>
+                <i class="fas fa-user-plus"></i>
+            </button>
             <p id="error-message" class="error"></p>
             <p id="success-message" class="success"></p>
         </form>
-        <p>Already have an account? <a href="/login.html">Login</a></p>
+        <p class="alt-link">Already have an account? <a href="/login.html">Login</a></p>
     </div>
     <script src="client.js"></script>
 </body>
