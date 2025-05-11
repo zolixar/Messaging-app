@@ -1,10 +1,12 @@
 [
   {
-    "username": "ameur",
+    "username": "Ameur",
+    "email": "amerheni32@gmail.com",
     "password": "13"
   },
   {
-    "username": "mohamed",
-    "password": "12345"
+    "username": "Mohamed",
+    "email": "med@gmail.com",
+    "password": "15"
   }
 ]

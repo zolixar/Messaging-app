@@ -5,36 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up - Atlas Chat</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <div class="brand">
-            <div class="logo-container">
-                <i class="fas fa-globe-americas"></i>
-            </div>
+            <img src="Atlas.png" alt="Atlas Logo" class="logo">
             <h2>Atlas Chat</h2>
         </div>
         <h1>Create Account</h1>
         <form id="signup-form">
             <div class="form-group">
                 <label for="username">Username</label>
-                <div class="input-with-icon">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
-                </div>
+                <input type="text" id="username" name="username" placeholder="Choose a username" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <div class="input-with-icon">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" name="password" placeholder="Create a password" required>
-                </div>
+                <input type="password" id="password" name="password" placeholder="Create a password" required>
             </div>
-            <button type="submit">
-                <span>Create Account</span>
-                <i class="fas fa-user-plus"></i>
-            </button>
+            <button type="submit">Create Account</button>
             <p id="error-message" class="error"></p>
             <p id="success-message" class="success"></p>
         </form>
