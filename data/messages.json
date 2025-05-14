@@ -16,5 +16,17 @@
     "email": "amerheni32@gmail.com",
     "text": "Test with fonts",
     "timestamp": "2025-05-11T14:24:33.685Z"
+  },
+  {
+    "username": "Mohamed",
+    "email": "med@gmail.com",
+    "text": "Hello",
+    "timestamp": "2025-05-14T13:38:24.447Z"
+  },
+  {
+    "username": "Mohamed",
+    "email": "med@gmail.com",
+    "text": "Testing email notification",
+    "timestamp": "2025-05-14T13:38:30.696Z"
   }
 ]
