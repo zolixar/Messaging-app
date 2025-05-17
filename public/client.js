@@ -134,7 +134,6 @@ document.addEventListener("DOMContentLoaded", () => {//Ensures DOM is Ready
 
         const result = await fetchData("/api/user");
         if (!result || !result.ok) return;
-
         welcomeMessageSpan.textContent = `Welcome, ${result.data.username}!`;
         logoutButton.style.display = "inline-block";
     }
